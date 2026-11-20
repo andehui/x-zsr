@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周树人小说 - 经典文学阅读馆</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="brand">
+                <h1>周树人小说</h1>
+                <p class="subtitle">横眉冷对千夫指，俯首甘为孺子牛 · 鲁迅短篇小说典藏</p>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索篇名、人物或关键词...">
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <section class="intro-banner">
+            <h2>馆藏经典</h2>
+            <p>收录周树人（鲁迅）先生代表性短篇小说全文，支持在线沉浸式阅读、夜间模式切换及字号调节。</p>
+        </section>
+
+        <section class="novel-grid" id="novelList">
+            <!-- 小说列表将由 JS 动态渲染 -->
+        </section>
+    </main>
+
+    <!-- 阅读器模态框 -->
+    <div class="reader-modal" id="readerModal">
+        <div class="reader-toolbar">
+            <div class="toolbar-left">
+                <button id="closeReaderBtn" class="btn-tool">← 返回书目</button>
+                <span id="readerTitle" class="reader-doc-title"></span>
+            </div>
+            <div class="toolbar-right">
+                <button id="fontDecreaseBtn" class="btn-tool" title="减小字号">A-</button>
+                <button id="fontIncreaseBtn" class="btn-tool" title="增大字号">A+</button>
+                <button id="themeToggleBtn" class="btn-tool" title="切换护眼/夜间模式">🌙 夜间</button>
+            </div>
+        </div>
+        <div class="reader-body" id="readerBody">
+            <article class="article-container" id="articleContainer">
+                <h1 id="articleHeading"></h1>
+                <div class="article-meta" id="articleMeta"></div>
+                <div class="article-content" id="articleContent"></div>
+                <div class="article-nav">
+                    <button id="prevChapterBtn" class="btn-nav">上一篇</button>
+                    <button id="nextChapterBtn" class="btn-nav">下一篇</button>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>© 2026 周树人小说 · 静态纯HTML文学阅读站 | 仅供学习与经典文学欣赏</p>
+        </div>
+    </footer>
+
+    <script src="js/novels.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
