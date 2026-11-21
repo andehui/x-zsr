@@ -1,4 +1,4 @@
-const PAGE_SIZE = 9; // 每页固定展示 9 部作品
+const PAGE_SIZE = 9; // 每页固定 9 篇，36 篇共 4 页
 let currentPage = 1;
 let filteredNovels = [...NOVELS];
 let currentNovelIndex = -1;
@@ -13,7 +13,6 @@ const readerTitleEl = document.getElementById("readerTitle");
 const articleHeadingEl = document.getElementById("articleHeading");
 const articleMetaEl = document.getElementById("articleMeta");
 const articleContentEl = document.getElementById("articleContent");
-const articleContainerEl = document.getElementById("articleContainer");
 const prevChapterBtn = document.getElementById("prevChapterBtn");
 const nextChapterBtn = document.getElementById("nextChapterBtn");
 
@@ -51,11 +50,9 @@ function renderPagination(totalPages) {
     }
 
     let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="changePage(${currentPage - 1})">上一页</button>`;
-
     for (let i = 1; i <= totalPages; i++) {
         html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="changePage(${i})">${i}</button>`;
     }
-
     html += `<button class="page-btn" ${currentPage === totalPages ? "disabled" : ""} onclick="changePage(${currentPage + 1})">下一页</button>`;
     paginationEl.innerHTML = html;
 }
@@ -88,7 +85,7 @@ function openReaderById(id) {
 
     readerTitleEl.textContent = novel.title;
     articleHeadingEl.textContent = novel.title;
-    articleMetaEl.textContent = `${novel.collection} · 创作/发表年份：${novel.year}`;
+    articleMetaEl.textContent = `${novel.collection} · ${novel.year}`;
     articleContentEl.innerHTML = novel.content;
     articleContentEl.style.fontSize = `${fontSize}px`;
 
