@@ -1,47 +1,43 @@
 const PAGE_SIZE = 9; // 每页固定展示 9 部作品
 let currentPage = 1;
-let currentCategory = "全部";
-let currentKeyword = "";
+let filteredNovels = [...NOVELS];
+let currentNovelIndex = -1;
+let fontSize = 18;
 
-function getFilteredWorks() {
-    return NOVELS.filter(item => {
-        const matchCat = currentCategory === "全部" || item.category === currentCategory;
-        const kw = currentKeyword.trim().toLowerCase();
-        const matchKw = !kw ||
-            (item.title && item.title.toLowerCase().includes(kw)) ||
-            (item.collection && item.collection.toLowerCase().includes(kw)) ||
-            (item.category && item.category.toLowerCase().includes(kw)) ||
-            (item.summary && item.summary.toLowerCase().includes(kw)) ||
-            (item.content && item.content.toLowerCase().includes(kw));
-        return matchCat && matchKw;
-    });
-}
+const novelListEl = document.getElementById("novelList");
+const paginationEl = document.getElementById("pagination");
+const searchInputEl = document.getElementById("searchInput");
 
-function renderPage() {
-    const list = getFilteredWorks();
-    const novelListEl = document.getElementById("novelList");
-    const paginationEl = document.getElementById("pagination");
+const readerModalEl = document.getElementById("readerModal");
+const readerTitleEl = document.getElementById("readerTitle");
+const articleHeadingEl = document.getElementById("articleHeading");
+const articleMetaEl = document.getElementById("articleMeta");
+const articleContentEl = document.getElementById("articleContent");
+const articleContainerEl = document.getElementById("articleContainer");
+const prevChapterBtn = document.getElementById("prevChapterBtn");
+const nextChapterBtn = document.getElementById("nextChapterBtn");
 
-    const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+function renderNovels() {
+    const totalPages = Math.max(1, Math.ceil(filteredNovels.length / PAGE_SIZE));
     if (currentPage > totalPages) {
         currentPage = totalPages;
     }
 
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-    const pageItems = list.slice(startIndex, startIndex + PAGE_SIZE);
+    const pageItems = filteredNovels.slice(startIndex, startIndex + PAGE_SIZE);
 
     if (pageItems.length === 0) {
-        novelListEl.innerHTML = `<p class="empty-tip">没有找到匹配的作品，换个分类或关键词试试。</p>`;
+        novelListEl.innerHTML = `<p class="empty-tip">没有找到匹配的小说，换个关键词试试。</p>`;
         paginationEl.innerHTML = "";
         return;
     }
 
     novelListEl.innerHTML = pageItems.map(novel => `
-        <article class="novel-card" data-id="${novel.id}">
-            <div class="novel-meta">${novel.category || "作品"} · ${novel.collection || ""} · ${novel.year || ""}</div>
+        <article class="novel-card">
+            <div class="novel-meta">${novel.collection} · ${novel.year}</div>
             <h3 class="novel-title">${novel.title}</h3>
-            <p class="novel-summary">${novel.summary || ""}</p>
-            <button class="btn-read" onclick="openReader(${novel.id})">开始阅读</button>
+            <p class="novel-summary">${novel.summary}</p>
+            <button class="btn-read" onclick="openReaderById(${novel.id})">开始阅读</button>
         </article>
     `).join("");
 
@@ -49,40 +45,102 @@ function renderPage() {
 }
 
 function renderPagination(totalPages) {
-    const paginationEl = document.getElementById("pagination");
     if (totalPages <= 1) {
         paginationEl.innerHTML = "";
         return;
     }
 
-    let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="goToPage(${currentPage - 1})">上一页</button>`;
+    let html = `<button class="page-btn" ${currentPage === 1 ? "disabled" : ""} onclick="changePage(${currentPage - 1})">上一页</button>`;
+
     for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>`;
+        html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="changePage(${i})">${i}</button>`;
     }
-    html += `<button class="page-btn" ${currentPage === totalPages ? "disabled" : ""} onclick="goToPage(${currentPage + 1})">下一页</button>`;
+
+    html += `<button class="page-btn" ${currentPage === totalPages ? "disabled" : ""} onclick="changePage(${currentPage + 1})">下一页</button>`;
     paginationEl.innerHTML = html;
 }
 
-function goToPage(page) {
+function changePage(page) {
     currentPage = page;
-    renderPage();
+    renderNovels();
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-document.getElementById("categoryBar").addEventListener("click", (e) => {
-    const btn = e.target.closest(".cat-btn");
-    if (!btn) return;
-    document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentCategory = btn.dataset.cat;
+searchInputEl.addEventListener("input", (e) => {
+    const kw = e.target.value.trim().toLowerCase();
     currentPage = 1;
-    renderPage();
+    filteredNovels = NOVELS.filter(novel =>
+        novel.title.toLowerCase().includes(kw) ||
+        novel.collection.toLowerCase().includes(kw) ||
+        novel.year.toLowerCase().includes(kw) ||
+        novel.summary.toLowerCase().includes(kw) ||
+        novel.content.toLowerCase().includes(kw)
+    );
+    renderNovels();
 });
 
-document.getElementById("searchInput").addEventListener("input", (e) => {
-    currentKeyword = e.target.value;
-    currentPage = 1;
-    renderPage();
+function openReaderById(id) {
+    const idx = filteredNovels.findIndex(n => n.id === id);
+    if (idx === -1) return;
+
+    currentNovelIndex = idx;
+    const novel = filteredNovels[currentNovelIndex];
+
+    readerTitleEl.textContent = novel.title;
+    articleHeadingEl.textContent = novel.title;
+    articleMetaEl.textContent = `${novel.collection} · 创作/发表年份：${novel.year}`;
+    articleContentEl.innerHTML = novel.content;
+    articleContentEl.style.fontSize = `${fontSize}px`;
+
+    prevChapterBtn.disabled = currentNovelIndex <= 0;
+    nextChapterBtn.disabled = currentNovelIndex >= filteredNovels.length - 1;
+
+    readerModalEl.classList.add("active");
+    readerModalEl.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.getElementById("readerBody").scrollTop = 0;
+}
+
+function closeReader() {
+    readerModalEl.classList.remove("active");
+    readerModalEl.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+}
+
+prevChapterBtn.addEventListener("click", () => {
+    if (currentNovelIndex > 0) {
+        openReaderById(filteredNovels[currentNovelIndex - 1].id);
+    }
 });
 
-renderPage();
+nextChapterBtn.addEventListener("click", () => {
+    if (currentNovelIndex < filteredNovels.length - 1) {
+        openReaderById(filteredNovels[currentNovelIndex + 1].id);
+    }
+});
+
+document.getElementById("closeReaderBtn").addEventListener("click", closeReader);
+
+readerModalEl.addEventListener("click", (e) => {
+    if (e.target === document.getElementById("readerBody")) {
+        closeReader();
+    }
+});
+
+document.getElementById("fontDecreaseBtn").addEventListener("click", () => {
+    fontSize = Math.max(14, fontSize - 2);
+    articleContentEl.style.fontSize = `${fontSize}px`;
+});
+
+document.getElementById("fontIncreaseBtn").addEventListener("click", () => {
+    fontSize = Math.min(30, fontSize + 2);
+    articleContentEl.style.fontSize = `${fontSize}px`;
+});
+
+document.getElementById("themeToggleBtn").addEventListener("click", (e) => {
+    readerModalEl.classList.toggle("dark-mode");
+    const isDark = readerModalEl.classList.contains("dark-mode");
+    e.target.textContent = isDark ? "☀️ 日间" : "🌙 夜间";
+});
+
+renderNovels();
