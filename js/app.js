@@ -3,6 +3,7 @@ let currentPage = 1;
 let filteredNovels = [...NOVELS];
 let currentNovelIndex = -1;
 let fontSize = 18;
+const textCache = new Map();
 
 const novelListEl = document.getElementById("novelList");
 const paginationEl = document.getElementById("pagination");
@@ -15,6 +16,48 @@ const articleMetaEl = document.getElementById("articleMeta");
 const articleContentEl = document.getElementById("articleContent");
 const prevChapterBtn = document.getElementById("prevChapterBtn");
 const nextChapterBtn = document.getElementById("nextChapterBtn");
+
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function textToParagraphs(rawText) {
+    const paragraphs = rawText
+        .replace(/\r\n/g, "\n")
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    if (paragraphs.length === 0) {
+        return `<p>该篇文本文件暂为空。</p>`;
+    }
+
+    return paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join("");
+}
+
+async function loadNovelHtml(novel) {
+    if (textCache.has(novel.id)) {
+        return textCache.get(novel.id);
+    }
+
+    if (!novel.file) {
+        return `<p>未配置文本文件路径。</p>`;
+    }
+
+    const res = await fetch(novel.file);
+    if (!res.ok) {
+        throw new Error(`无法加载 ${novel.file}（状态码 ${res.status}）`);
+    }
+
+    const rawText = await res.text();
+    const html = textToParagraphs(rawText);
+    textCache.set(novel.id, html);
+    return html;
+}
 
 function renderNovels() {
     const totalPages = Math.max(1, Math.ceil(filteredNovels.length / PAGE_SIZE));
@@ -70,13 +113,12 @@ searchInputEl.addEventListener("input", (e) => {
         novel.title.toLowerCase().includes(kw) ||
         novel.collection.toLowerCase().includes(kw) ||
         novel.year.toLowerCase().includes(kw) ||
-        novel.summary.toLowerCase().includes(kw) ||
-        novel.content.toLowerCase().includes(kw)
+        novel.summary.toLowerCase().includes(kw)
     );
     renderNovels();
 });
 
-function openReaderById(id) {
+async function openReaderById(id) {
     const idx = filteredNovels.findIndex(n => n.id === id);
     if (idx === -1) return;
 
@@ -86,7 +128,7 @@ function openReaderById(id) {
     readerTitleEl.textContent = novel.title;
     articleHeadingEl.textContent = novel.title;
     articleMetaEl.textContent = `${novel.collection} · ${novel.year}`;
-    articleContentEl.innerHTML = novel.content;
+    articleContentEl.innerHTML = `<p>正在加载全文……</p>`;
     articleContentEl.style.fontSize = `${fontSize}px`;
 
     prevChapterBtn.disabled = currentNovelIndex <= 0;
@@ -96,6 +138,15 @@ function openReaderById(id) {
     readerModalEl.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     document.getElementById("readerBody").scrollTop = 0;
+
+    try {
+        const html = await loadNovelHtml(novel);
+        if (filteredNovels[currentNovelIndex]?.id === id) {
+            articleContentEl.innerHTML = html;
+        }
+    } catch (err) {
+        articleContentEl.innerHTML = `<p>全文加载失败：${escapeHtml(err.message)}。请确认已通过本地服务器或网站环境访问，且 ${escapeHtml(novel.file)} 文件存在。</p>`;
+    }
 }
 
 function closeReader() {
